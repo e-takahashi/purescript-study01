@@ -14,6 +14,8 @@ import Control.Monad.Eff.Console (log, CONSOLE)
 import Data.Traversable (traverse)
 import Data.Foldable (foldr)
 
+import Control.Parallel.Class
+
 foreign import data FS :: Effect
 
 type ErrorCode = String
@@ -85,3 +87,9 @@ concatenateMany srcs dest = do
   let content = foldr (<>) "" contents
   writeFileContEx dest content
   
+-- 12.7 3
+concatenateManyP :: forall eff. (Array FilePath) -> FilePath -> ExceptT ErrorCode (Async (fs::FS|eff)) Unit
+concatenateManyP srcs dest = do
+  contents <- sequential $ traverse (\src -> parallel (readFileContEx src)) srcs
+  let content = foldr (<>) "" contents
+  writeFileContEx dest content
