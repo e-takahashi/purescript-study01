@@ -23,7 +23,8 @@
     "purescript-parallel": "^3.0.0",
     "purescript-refs": "^3.0.0",
     "purescript-strings": "^3.0.0",
-    "purescript-transformers": "^3.0.0"
+    "purescript-transformers": "^3.0.0",
+    "purescript-foreign": "^4.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
