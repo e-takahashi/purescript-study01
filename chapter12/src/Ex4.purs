@@ -2,13 +2,12 @@ module Ex4 where
 
 import Prelude
 
---import Data.Foreign (Foreign, F, toForeign, MultipleErrors)
 import Data.Foreign 
 import Data.Function.Uncurried (Fn3, runFn3)
 import Control.Monad.Eff
 import Data.Either
 import Control.Monad.Except
-import Data.Function.Uncurried (Fn3, runFn3)
+
 import Data.Show
 import Data.Foldable (foldr)
 
@@ -17,7 +16,6 @@ import Data.NonEmpty
 import Data.List.Types 
 import Control.Monad.Cont.Trans
 import Data.Identity
-import Control.Monad.Except
 
 data FormData = FormData {references :: Array String}
 
@@ -47,6 +45,7 @@ readJSON :: forall a. String -> F a
 readJSON s =
   case f s of
     Right a -> pure a
-    Left  e -> throwError (NonEmptyList ((JSONError e) :| empty))
+--    Left  e -> throwError (NonEmptyList ((JSONError e) :| empty))
+    Left  e -> throwError (NonEmptyList (singleton (JSONError e)))
   where
     f s = runFn3 readJSONImpl s Right Left
