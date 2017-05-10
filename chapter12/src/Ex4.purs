@@ -15,6 +15,9 @@ import Data.Foldable (foldr)
 import Control.Plus
 import Data.NonEmpty
 import Data.List.Types 
+import Control.Monad.Cont.Trans
+import Data.Identity
+import Control.Monad.Except
 
 data FormData = FormData {references :: Array String}
 
@@ -29,22 +32,21 @@ foreign import stringifyImpl :: Foreign -> String
 stringify :: forall a. a -> String
 stringify x = stringifyImpl (toForeign x)
 
-foreign import readJSONImpl :: forall a b. Fn3 String (a -> Unit) (b -> Unit) Unit
+-- http://blog.ndk.io/purescript-ffi.html
 
-readJSON0 :: forall a b. String -> (Either MultipleErrors a -> Unit) -> Unit
-readJSON0 s k = runFn3 readJSONImpl s ok ng where
-  ok = k <<< Right
-  ng = k <<< Left
+type Error' = String
+
+foreign import readJSONImpl :: forall a.
+                               Fn3
+                               String
+                               (a -> Either Error' a)
+                               (Error' -> Either Error' a)
+                               (Either Error' a)
 
 readJSON :: forall a. String -> F a
-readJSON s = do
-  pure readJSON0 s (\e -> case e of
-                       Right a -> 
-
-testExcept :: forall a. Int -> a -> F a
-testExcept n a = do
-  if n < 10
-    then throwError (NonEmptyList ((JSONError "small") :| empty))
-    else pure a
-
-
+readJSON s =
+  case f s of
+    Right a -> pure a
+    Left  e -> throwError (NonEmptyList ((JSONError e) :| empty))
+  where
+    f s = runFn3 readJSONImpl s Right Left
