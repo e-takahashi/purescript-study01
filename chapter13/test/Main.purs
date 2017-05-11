@@ -15,6 +15,12 @@ import Sorted (sorted)
 import Test.QuickCheck (quickCheck, (<?>))
 import Tree (Tree, member, insert, toArray, anywhere)
 
+import Test.QuickCheck.Arbitrary (class Arbitrary, arbitrary)
+import Data.NonEmpty (NonEmpty, singleton, (:|))
+import Data.String
+import Test.QuickCheck.Gen (arrayOf, elements, Gen, sample)
+import Test.QuickCheck.LCG
+
 isSorted :: forall a. (Ord a) => Array a -> Boolean
 isSorted = go <<< fromFoldable
   where
@@ -44,6 +50,16 @@ isUnion xs ys zs =
     ws  = ys' \\ xs
     zs' = xs <> ws
   in (sort zs) == (sort zs')
+--
+
+-- 13.6
+newtype Byte = Byte Int
+
+instance arbitraryByte :: Arbitrary Byte where
+  arbitrary = map intToByte arbitrary
+    where
+    intToByte n | n >= 0 = Byte (n `mod` 256)
+                | otherwise = intToByte (-n)
 --
 
 main :: Eff ( console :: CONSOLE
@@ -110,4 +126,20 @@ main = do
       result = bools $ union xs ys
     in
      isUnion xs ys result <?> show result <> " is not the union of " <> show xs <> " and " <> show ys <> "."
+  --
 
+  -- 13.6
+newtype RndString = RndString String
+
+instance arbitraryRndString :: Arbitrary RndString where
+  arbitrary = map (RndString <<< fromCharArray) g where
+    g = arrayOf $ elements ('a' :| (toCharArray "bcdefghijklmnopqrstuvwxyz"))
+
+
+instance showRndString :: Show RndString where
+  show (RndString s) = s
+
+mycheck :: Int -> Int -> Array RndString
+mycheck s n = sample (mkSeed s) n (arbitrary :: Gen RndString)
+
+  --
