@@ -12,7 +12,7 @@ import Data.Function (on)
 import Data.List (List(..), fromFoldable)
 import Merge (mergeWith, mergePoly, merge)
 import Sorted (sorted)
-import Test.QuickCheck (quickCheck)
+import Test.QuickCheck (quickCheck, (<?>))
 import Tree (Tree, member, insert, toArray, anywhere)
 
 isSorted :: forall a. (Ord a) => Array a -> Boolean
@@ -57,3 +57,28 @@ main = do
   quickCheck $ \f g t ->
     anywhere (\s -> f s || g s) t ==
       anywhere f (treeOfInt t) || anywhere g t
+
+  -- Exercises
+  -- 13.4
+  quickCheck $ \xs ->
+    let result = merge xs []
+--    let result = merge xs [1,2]
+    in (xs == result) <?> "merge x []: " <> show xs <> " was changed. " <> show result
+
+  quickCheck $ \xs ->
+    let result = merge [] xs
+--    let result = merge [1,2] xs
+    in (xs == result) <?> "merge [] x: " <> show xs <> " was changed. " <> show result
+  
+  quickCheck $ \xs ys ->
+    let
+      result = merge (sorted xs) (sorted ys)
+    in
+     isSorted result <?> show xs <> "," <> show ys <> " not sorted " <> show result
+  
+  quickCheck $ \xs ys ->
+    let
+      result = merge xs ys
+    in
+     xs `isSubarrayOf` result <?> show xs <> " not a subarray of " <> show result
+     
