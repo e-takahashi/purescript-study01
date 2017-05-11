@@ -127,6 +127,11 @@ main = do
     in
      isUnion xs ys result <?> show result <> " is not the union of " <> show xs <> " and " <> show ys <> "."
   --
+  -- 13.6
+  
+  --
+
+
 
   -- 13.6
 newtype RndString = RndString String
