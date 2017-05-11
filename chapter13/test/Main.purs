@@ -6,7 +6,7 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Random (RANDOM)
-import Data.Array (sortBy, intersect)
+import Data.Array (sortBy, intersect, nub, union, (\\), sort)
 import Data.Foldable (foldr)
 import Data.Function (on)
 import Data.List (List(..), fromFoldable)
@@ -32,6 +32,19 @@ intToBool = id
 
 treeOfInt :: Tree Number -> Tree Number
 treeOfInt = id
+
+-- 13.5
+bools :: Array Boolean -> Array Boolean
+bools = id
+
+isUnion :: forall a. (Ord a) => Array a -> Array a -> Array a -> Boolean
+isUnion xs ys zs =
+  let
+    ys' = nub ys
+    ws  = ys' \\ xs
+    zs' = xs <> ws
+  in (sort zs) == (sort zs')
+--
 
 main :: Eff ( console :: CONSOLE
             , random :: RANDOM
@@ -81,4 +94,20 @@ main = do
       result = merge xs ys
     in
      xs `isSubarrayOf` result <?> show xs <> " not a subarray of " <> show result
-     
+
+  -- 13.5
+  quickCheck $ \xs ys -> isSorted $ bools $ mergePoly (sorted xs) (sorted ys)
+  quickCheck $ \xs ys -> bools xs `isSubarrayOf` mergePoly xs ys
+  
+  quickCheck $ \xs ys ->
+    let
+      result = ints $ union xs ys
+    in
+     isUnion xs ys result <?> show result <> " is not the union of " <> show xs <> " and " <> show ys <> "."
+
+  quickCheck $ \xs ys ->
+    let
+      result = bools $ union xs ys
+    in
+     isUnion xs ys result <?> show result <> " is not the union of " <> show xs <> " and " <> show ys <> "."
+
