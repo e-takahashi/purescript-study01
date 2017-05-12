@@ -3,6 +3,7 @@ module Data.DOM.Phantom
   , Attribute
   , Content
   , AttributeKey
+  , Length(..)
   , class IsValue
   , toValue
 
@@ -93,10 +94,12 @@ _class = AttributeKey "class"
 src :: AttributeKey String
 src = AttributeKey "src"
 
-width :: AttributeKey Int
+--width :: AttributeKey Int
+width :: AttributeKey Length
 width = AttributeKey "width"
 
-height :: AttributeKey Int
+--height :: AttributeKey Int
+height :: AttributeKey Length
 height = AttributeKey "height"
 
 render :: Element -> String
@@ -117,3 +120,10 @@ render (Element e) =
         renderContentItem :: Content -> String
         renderContentItem (TextContent s) = s
         renderContentItem (ElementContent e') = render e'
+
+-- 14.5 1
+data Length = Pixcel Int | Percentage Int
+instance pxIsValue :: IsValue Length where
+  toValue (Pixcel p) = show p <> "px"
+  toValue (Percentage p) = show p <> "%"
+--}
