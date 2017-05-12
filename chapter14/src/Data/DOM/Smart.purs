@@ -7,12 +7,15 @@ module Data.DOM.Smart
   , a
   , p
   , img
+  , input
 
   , href
   , _class
   , src
   , width
   , height
+  , disabled
+  , checked
 
   , attribute, (:=)
   , text
@@ -38,7 +41,8 @@ data Content
 
 newtype Attribute = Attribute
   { key          :: String
-  , value        :: String
+--  , value        :: String
+  , value        :: Maybe String
   }
 
 element :: String -> Array Attribute -> Maybe (Array Content) -> Element
@@ -59,7 +63,8 @@ newtype AttributeKey = AttributeKey String
 attribute :: AttributeKey -> String -> Attribute
 attribute (AttributeKey key) value = Attribute
   { key: key
-  , value: value
+--  , value: value
+  , value: Just value
   }
 
 infix 4 attribute as :=
@@ -88,6 +93,17 @@ width = AttributeKey "width"
 height :: AttributeKey
 height = AttributeKey "height"
 
+-- 14.4 2
+checked :: Attribute
+checked = Attribute { key: "checked", value: Nothing }
+
+disabled :: Attribute
+disabled = Attribute { key: "disabled", value: Nothing }
+
+input :: Array Attribute -> Element
+input attribs = element "input" attribs Nothing
+--}
+
 render :: Element -> String
 render (Element e) =
     "<" <> e.name <>
@@ -95,7 +111,9 @@ render (Element e) =
     renderContent e.content
   where
     renderAttribute :: Attribute -> String
-    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
+--    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
+    renderAttribute (Attribute { key:k, value: Just v}) = k <> "=\"" <> v <> "\""
+    renderAttribute (Attribute { key:k, value: Nothing}) = k
 
     renderContent :: Maybe (Array Content) -> String
     renderContent Nothing = " />"
@@ -116,8 +134,4 @@ log $ render $ p [_class:="top", width:="100%"][text "hello", elem (p [_class:
 log $ render $ p [_class:="top", width:="100%"][ text "hello", elem (img [src:
 ="hoge.jpg", width:="50%", height:="50%"])]
 
---}
-{-- 14.4 2
-checked :: Attribute
-checked = (AttributeKey "checked") := Nothing
 --}
