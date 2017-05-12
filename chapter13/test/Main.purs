@@ -7,12 +7,12 @@ import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Random (RANDOM)
 import Data.Array (sortBy, intersect, nub, union, (\\), sort)
-import Data.Foldable (foldr, foldl)
+import Data.Foldable (foldr, foldl, foldMap, all)
 import Data.Function (on)
 import Data.List (List(..), fromFoldable)
 import Merge (mergeWith, mergePoly, merge)
 import Sorted (sorted)
-import Test.QuickCheck (quickCheck, (<?>))
+import Test.QuickCheck (quickCheck, (<?>), class Testable, Result(..), quickCheckPure)
 import Tree (Tree, member, insert, toArray, anywhere)
 
 import Test.QuickCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary, coarbitrary)
@@ -20,6 +20,10 @@ import Data.NonEmpty ((:|))
 import Data.String (fromCharArray, toCharArray)
 import Test.QuickCheck.Gen (arrayOf, elements, Gen, sample, oneOf)
 import Test.QuickCheck.LCG (mkSeed)
+
+import Data.Maybe (Maybe(..))
+import Data.Maybe.First (First(..))
+import Data.Monoid (mempty)
 
 isSorted :: forall a. (Ord a) => Array a -> Boolean
 isSorted = go <<< fromFoldable
@@ -92,7 +96,7 @@ mycheck :: Int -> Int -> Array RndString
 mycheck s n = sample (mkSeed s) n (arbitrary :: Gen RndString)
 --
 
--- 13.9 4
+-- 13.9 3
 data OneTwoThree a = One a | Two a a | Three a a a
 instance arbOneTwoThree :: (Arbitrary a) =>  Arbitrary (OneTwoThree a) where
   arbitrary = oneOf $ arb1 :| [arb2, arb3] where
@@ -105,6 +109,27 @@ instance showOneTowThree :: (Show a) => Show (OneTwoThree a) where
   show (Two a b) = "{" <> show a <> "," <> show b <> "}"
   show (Three a b c) = "{" <> show a <> "," <> show b <> "," <> show c <> "}"
 --}
+
+-- 13.9 4
+testall1 :: forall a prop. Testable prop => Int -> Int -> prop -> Boolean
+testall1 seed n prop =
+  all (\r -> case r of
+          Success  -> true
+          Failed e -> false
+      ) (quickCheckPure (mkSeed seed) n prop)
+
+testall2 :: forall a prop. Testable prop => Int -> Int -> prop -> First String
+testall2 seed n prop =
+  foldMap (\r -> 
+            First (case r of
+                      Success -> Nothing
+                      Failed e -> Just e
+                  )
+          ) $ quickCheckPure (mkSeed seed) n prop
+
+prop1 = \xs ys zs -> (xs `merge` (ys `merge` zs)) == ((xs `merge` ys) `merge` zs)
+prop2 = \xs ys zs -> (xs `merge` (ys `merge` zs)) /= ((xs `merge` ys) `merge` zs)
+--}  
 
 
 main :: Eff ( console :: CONSOLE
