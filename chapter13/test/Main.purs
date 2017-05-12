@@ -7,7 +7,7 @@ import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Random (RANDOM)
 import Data.Array (sortBy, intersect, nub, union, (\\), sort)
-import Data.Foldable (foldr)
+import Data.Foldable (foldr, foldl)
 import Data.Function (on)
 import Data.List (List(..), fromFoldable)
 import Merge (mergeWith, mergePoly, merge)
@@ -15,11 +15,11 @@ import Sorted (sorted)
 import Test.QuickCheck (quickCheck, (<?>))
 import Tree (Tree, member, insert, toArray, anywhere)
 
-import Test.QuickCheck.Arbitrary (class Arbitrary, arbitrary)
-import Data.NonEmpty (NonEmpty, singleton, (:|))
-import Data.String
+import Test.QuickCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary, coarbitrary)
+import Data.NonEmpty ((:|))
+import Data.String (fromCharArray, toCharArray)
 import Test.QuickCheck.Gen (arrayOf, elements, Gen, sample)
-import Test.QuickCheck.LCG
+import Test.QuickCheck.LCG (mkSeed)
 
 isSorted :: forall a. (Ord a) => Array a -> Boolean
 isSorted = go <<< fromFoldable
@@ -36,7 +36,9 @@ ints = id
 intToBool :: (Int -> Boolean) -> Int -> Boolean
 intToBool = id
 
-treeOfInt :: Tree Number -> Tree Number
+
+--treeOfInt :: Tree Number -> Tree Number
+treeOfInt :: Tree Int -> Tree Int
 treeOfInt = id
 
 -- 13.5
@@ -60,6 +62,15 @@ instance arbitraryByte :: Arbitrary Byte where
     where
     intToByte n | n >= 0 = Byte (n `mod` 256)
                 | otherwise = intToByte (-n)
+--
+-- 13.9 1
+instance coarbByte :: Coarbitrary Byte where
+  coarbitrary (Byte n) = coarbitrary n
+--    
+
+-- 13.6 2
+insertMany :: forall a. Ord a => Array a -> Tree a -> Tree a
+insertMany ns t = foldl (\b a -> insert a b) t ns
 --
 
 main :: Eff ( console :: CONSOLE
@@ -128,10 +139,8 @@ main = do
      isUnion xs ys result <?> show result <> " is not the union of " <> show xs <> " and " <> show ys <> "."
   --
   -- 13.6
-  
+  quickCheck $ \t a as -> member a $ insertMany as $ insert a $ treeOfInt t
   --
-
-
 
   -- 13.6
 newtype RndString = RndString String
