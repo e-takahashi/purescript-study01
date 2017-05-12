@@ -18,7 +18,7 @@ import Tree (Tree, member, insert, toArray, anywhere)
 import Test.QuickCheck.Arbitrary (class Arbitrary, arbitrary, class Coarbitrary, coarbitrary)
 import Data.NonEmpty ((:|))
 import Data.String (fromCharArray, toCharArray)
-import Test.QuickCheck.Gen (arrayOf, elements, Gen, sample)
+import Test.QuickCheck.Gen (arrayOf, elements, Gen, sample, oneOf)
 import Test.QuickCheck.LCG (mkSeed)
 
 isSorted :: forall a. (Ord a) => Array a -> Boolean
@@ -66,12 +66,46 @@ instance arbitraryByte :: Arbitrary Byte where
 -- 13.9 1
 instance coarbByte :: Coarbitrary Byte where
   coarbitrary (Byte n) = coarbitrary n
+
+instance showByte :: Show Byte where
+  show (Byte a) = "Byte(" <> show a <> ")"
 --    
 
 -- 13.6 2
 insertMany :: forall a. Ord a => Array a -> Tree a -> Tree a
 insertMany ns t = foldl (\b a -> insert a b) t ns
 --
+
+
+-- 13.6
+newtype RndString = RndString String
+
+instance arbitraryRndString :: Arbitrary RndString where
+  arbitrary = map (RndString <<< fromCharArray) g where
+    g = arrayOf $ elements ('a' :| (toCharArray "bcdefghijklmnopqrstuvwxyz"))
+
+
+instance showRndString :: Show RndString where
+  show (RndString s) = s
+
+mycheck :: Int -> Int -> Array RndString
+mycheck s n = sample (mkSeed s) n (arbitrary :: Gen RndString)
+--
+
+-- 13.9 4
+data OneTwoThree a = One a | Two a a | Three a a a
+instance arbOneTwoThree :: (Arbitrary a) =>  Arbitrary (OneTwoThree a) where
+  arbitrary = oneOf $ arb1 :| [arb2, arb3] where
+    arb1 = One <$> arbitrary
+    arb2 = Two <$> arbitrary <*> arbitrary
+    arb3 = Three <$> arbitrary <*> arbitrary <*> arbitrary
+
+instance showOneTowThree :: (Show a) => Show (OneTwoThree a) where
+  show (One a) = "{" <> show a <> "}"
+  show (Two a b) = "{" <> show a <> "," <> show b <> "}"
+  show (Three a b c) = "{" <> show a <> "," <> show b <> "," <> show c <> "}"
+--}
+
 
 main :: Eff ( console :: CONSOLE
             , random :: RANDOM
@@ -140,20 +174,4 @@ main = do
   --
   -- 13.6
   quickCheck $ \t a as -> member a $ insertMany as $ insert a $ treeOfInt t
-  --
-
-  -- 13.6
-newtype RndString = RndString String
-
-instance arbitraryRndString :: Arbitrary RndString where
-  arbitrary = map (RndString <<< fromCharArray) g where
-    g = arrayOf $ elements ('a' :| (toCharArray "bcdefghijklmnopqrstuvwxyz"))
-
-
-instance showRndString :: Show RndString where
-  show (RndString s) = s
-
-mycheck :: Int -> Int -> Array RndString
-mycheck s n = sample (mkSeed s) n (arbitrary :: Gen RndString)
-
   --
