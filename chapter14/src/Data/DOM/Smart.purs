@@ -106,3 +106,18 @@ render (Element e) =
         renderContentItem :: Content -> String
         renderContentItem (TextContent s) = s
         renderContentItem (ElementContent e') = render e'
+
+{--
+14.4 1
+
+log $ render $ p [_class:="top", width:="100%"][text "hello", elem (p [_class:
+="inner"][text "world"])]
+
+log $ render $ p [_class:="top", width:="100%"][ text "hello", elem (img [src:
+="hoge.jpg", width:="50%", height:="50%"])]
+
+--}
+{-- 14.4 2
+checked :: Attribute
+checked = (AttributeKey "checked") := Nothing
+--}
