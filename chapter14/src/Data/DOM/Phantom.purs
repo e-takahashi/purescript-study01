@@ -19,7 +19,7 @@ module Data.DOM.Phantom
   , src
   , width
   , height
---  , disabled
+  , disabled
 
   , attribute, (:=)
   , text
@@ -53,7 +53,8 @@ instance myboolFalse :: MyBool False
 
 newtype Attribute = Attribute
   { key          :: String
-  , value        :: String
+--14.5 2  , value        :: String
+    , value        :: Maybe String
   }
 
 newtype AttributeKey a = AttributeKey String
@@ -91,10 +92,20 @@ instance falseIsValue :: IsValue False where
 attribute :: forall a. IsValue a => AttributeKey a -> a -> Attribute
 attribute (AttributeKey key) value = Attribute
   { key: key
-  , value: toValue value
+--14.5 2  , value: toValue value
+  , value: Just $ toValue value
   }
 
 infix 4 attribute as :=
+
+--14.5 2
+data AttributeEmpty = AttributeEmpty String
+attributeEx :: AttributeEmpty -> Attribute
+attributeEx (AttributeEmpty key) = Attribute
+  { key: key
+  , value: Nothing
+  }
+--
 
 a :: Array Attribute -> Array Content -> Element
 a attribs content = element "a" attribs (Just content)
@@ -114,11 +125,11 @@ _class = AttributeKey "class"
 src :: AttributeKey String
 src = AttributeKey "src"
 
---width :: AttributeKey Int
+--14.5 1 width :: AttributeKey Int
 width :: AttributeKey Length
 width = AttributeKey "width"
 
---height :: AttributeKey Int
+--14.5 1 height :: AttributeKey Int
 height :: AttributeKey Length
 height = AttributeKey "height"
 
@@ -129,8 +140,11 @@ render (Element e) =
     renderContent e.content
   where
     renderAttribute :: Attribute -> String
-    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
-
+--14.5 2    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
+--14.5 2
+    renderAttribute (Attribute {key:key, value:(Just value)}) = key <> "=\"" <> value <> "\""
+    renderAttribute (Attribute {key:key, value:Nothing}) = key
+--
     renderContent :: Maybe (Array Content) -> String
     renderContent Nothing = " />"
     renderContent (Just content) =
@@ -147,10 +161,9 @@ instance pxIsValue :: IsValue Length where
   toValue (Pixcel p) = show p <> "px"
   toValue (Percentage p) = show p <> "%"
 --}
-{-- 14.5 2
-disabled :: forall a. MyBool a => AttributeKey a
-disabled = AttributeKey "disabled"
+-- 14.5 2
+--disabled :: forall a. MyBool a => AttributeKey a
+disabled :: Attribute
+disabled = attributeEx (AttributeEmpty "disabled")
 
-disabled' ::forall a. MyBool a =>  AttributeEmpty a
-disabled' = AttributeKey "disabled" := True
 --}
