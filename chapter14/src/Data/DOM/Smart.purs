@@ -7,15 +7,15 @@ module Data.DOM.Smart
   , a
   , p
   , img
-  , input
+  , input --14.4 2
 
   , href
   , _class
   , src
   , width
   , height
-  , disabled
-  , checked
+  , disabled --14.4 2
+  , checked  --14.4 2
 
   , attribute, (:=)
   , text
@@ -41,7 +41,7 @@ data Content
 
 newtype Attribute = Attribute
   { key          :: String
---  , value        :: String
+--14.4 2  , value        :: String
   , value        :: Maybe String
   }
 
@@ -63,11 +63,20 @@ newtype AttributeKey = AttributeKey String
 attribute :: AttributeKey -> String -> Attribute
 attribute (AttributeKey key) value = Attribute
   { key: key
---  , value: value
+--14.4 2  , value: value
   , value: Just value
   }
 
 infix 4 attribute as :=
+
+--14.4 2
+data AttributeEmpty = AttributeEmpty String
+attributeEx :: AttributeEmpty -> Attribute
+attributeEx (AttributeEmpty key) = Attribute
+  { key: key
+  , value: Nothing
+  }
+--
 
 a :: Array Attribute -> Array Content -> Element
 a attribs content = element "a" attribs (Just content)
@@ -95,10 +104,10 @@ height = AttributeKey "height"
 
 -- 14.4 2
 checked :: Attribute
-checked = Attribute { key: "checked", value: Nothing }
+checked = attributeEx (AttributeEmpty  "checked")
 
 disabled :: Attribute
-disabled = Attribute { key: "disabled", value: Nothing }
+disabled = attributeEx  (AttributeEmpty "disabled")
 
 input :: Array Attribute -> Element
 input attribs = element "input" attribs Nothing
@@ -111,10 +120,11 @@ render (Element e) =
     renderContent e.content
   where
     renderAttribute :: Attribute -> String
---    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
+--14.4 2    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
+--14.4 2
     renderAttribute (Attribute { key:k, value: Just v}) = k <> "=\"" <> v <> "\""
     renderAttribute (Attribute { key:k, value: Nothing}) = k
-
+--
     renderContent :: Maybe (Array Content) -> String
     renderContent Nothing = " />"
     renderContent (Just content) =

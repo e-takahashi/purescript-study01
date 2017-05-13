@@ -4,8 +4,11 @@ module Data.DOM.Phantom
   , Content
   , AttributeKey
   , Length(..)
+  , True(..)
+  , False(..)
   , class IsValue
   , toValue
+  , class MyBool
 
   , a
   , p
@@ -16,6 +19,7 @@ module Data.DOM.Phantom
   , src
   , width
   , height
+--  , disabled
 
   , attribute, (:=)
   , text
@@ -38,6 +42,14 @@ newtype Element = Element
 data Content
   = TextContent String
   | ElementContent Element
+
+-- 14.5 2
+class MyBool a
+data True  = True
+data False = False
+instance myboolTrue :: MyBool True
+instance myboolFalse :: MyBool False
+--
 
 newtype Attribute = Attribute
   { key          :: String
@@ -67,6 +79,14 @@ instance stringIsValue :: IsValue String where
 
 instance intIsValue :: IsValue Int where
   toValue = show
+
+-- 14.5 2
+instance trueIsValue :: IsValue True where
+  toValue True = "true"
+  
+instance falseIsValue :: IsValue False where
+  toValue False = "false"
+--
 
 attribute :: forall a. IsValue a => AttributeKey a -> a -> Attribute
 attribute (AttributeKey key) value = Attribute
@@ -126,4 +146,11 @@ data Length = Pixcel Int | Percentage Int
 instance pxIsValue :: IsValue Length where
   toValue (Pixcel p) = show p <> "px"
   toValue (Percentage p) = show p <> "%"
+--}
+{-- 14.5 2
+disabled :: forall a. MyBool a => AttributeKey a
+disabled = AttributeKey "disabled"
+
+disabled' ::forall a. MyBool a =>  AttributeEmpty a
+disabled' = AttributeKey "disabled" := True
 --}
