@@ -6,6 +6,7 @@ module Data.DOM.Phantom
   , Length(..)
   , True(..)
   , False(..)
+  , NoSpec(..)
   , class IsValue
   , toValue
   , class MyBool
@@ -47,15 +48,23 @@ data Content
 class MyBool a
 data True  = True
 data False = False
+data NoSpec = NoSpec
 instance myboolTrue :: MyBool True
 instance myboolFalse :: MyBool False
+instance myboolNoSpec :: MyBool NoSpec
 --
 
+{--14.5 2
 newtype Attribute = Attribute
   { key          :: String
 --14.5 2  , value        :: String
     , value        :: Maybe String
   }
+--}
+data Attribute = Attribute
+  { key          :: String
+    , value        :: String
+  } | AttEmpty { key :: String }
 
 newtype AttributeKey a = AttributeKey String
 
@@ -87,25 +96,27 @@ instance trueIsValue :: IsValue True where
   
 instance falseIsValue :: IsValue False where
   toValue False = "false"
+
+instance nospecIsValue :: IsValue NoSpec where
+  toValue NoSpec = ""
 --
 
 attribute :: forall a. IsValue a => AttributeKey a -> a -> Attribute
+--attribute (AttributeKey key) NoSpec = AttEmpty { key: key }
 attribute (AttributeKey key) value = Attribute
   { key: key
 --14.5 2  , value: toValue value
-  , value: Just $ toValue value
+--14.5 2  , value: Just $ toValue value
+  , value: toValue value
   }
 
 infix 4 attribute as :=
 
---14.5 2
-data AttributeEmpty = AttributeEmpty String
-attributeEx :: AttributeEmpty -> Attribute
-attributeEx (AttributeEmpty key) = Attribute
-  { key: key
-  , value: Nothing
-  }
---
+{--14.5 2
+attributeEx :: forall a. AttributeKey a -> Attribute
+attributeEx (AttributeKey key) = AttEmpty
+  { key: key }
+--}
 
 a :: Array Attribute -> Array Content -> Element
 a attribs content = element "a" attribs (Just content)
@@ -140,11 +151,14 @@ render (Element e) =
     renderContent e.content
   where
     renderAttribute :: Attribute -> String
---14.5 2    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
+    renderAttribute (Attribute x) = x.key <> "=\"" <> x.value <> "\""
 --14.5 2
+    renderAttribute (AttEmpty x) = x.key
+--}
+{--14.5 2
     renderAttribute (Attribute {key:key, value:(Just value)}) = key <> "=\"" <> value <> "\""
     renderAttribute (Attribute {key:key, value:Nothing}) = key
---
+--}
     renderContent :: Maybe (Array Content) -> String
     renderContent Nothing = " />"
     renderContent (Just content) =
@@ -162,8 +176,8 @@ instance pxIsValue :: IsValue Length where
   toValue (Percentage p) = show p <> "%"
 --}
 -- 14.5 2
---disabled :: forall a. MyBool a => AttributeKey a
-disabled :: Attribute
-disabled = attributeEx (AttributeEmpty "disabled")
-
+--disabled :: Attribute
+--disabled = attributeEx (AttributeKey "disabled")
+disabled :: forall a. MyBool a => AttributeKey a
+disabled = AttributeKey "disabled"
 --}
