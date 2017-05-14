@@ -96,14 +96,20 @@ attribute (AttributeKey key) value = Attribute
 
 infix 4 attribute as :=
 
-a :: Array Attribute -> Content Unit -> Element
-a attribs content = element "a" attribs (Just content)
+a' :: Array Attribute -> Content Unit -> Element
+a' attribs content = element "a" attribs (Just content)
+a ::  Array Attribute -> Content Unit
+a attribs content = elem $ a' attribs content
 
-p :: Array Attribute -> Content Unit -> Element
-p attribs content = element "p" attribs (Just content)
+p' :: Array Attribute -> Content Unit -> Element
+p' attribs content = element "p" attribs (Just content)
+p :: Array Attribute -> Content Unit
+p attribs content = elem $ p' attribs content
 
-img :: Array Attribute -> Element
-img attribs = element "img" attribs Nothing
+img' :: Array Attribute -> Element
+img' attribs = element "img" attribs Nothing
+img :: Array Attribute -> Content Unit
+img attribs = elem $ img' attribs
 
 data Href
   = URLHref String
