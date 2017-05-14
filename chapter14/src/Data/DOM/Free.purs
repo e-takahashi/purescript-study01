@@ -20,6 +20,7 @@ module Data.DOM.Free
   , attribute, (:=)
   , text
   , elem
+  , comment
 
   , render
   ) where
@@ -41,10 +42,12 @@ newtype Element = Element
 data ContentF a
   = TextContent String a
   | ElementContent Element a
+  | Comment String a
 
 instance functorContentF :: Functor ContentF where
   map f (TextContent s x) = TextContent s (f x)
   map f (ElementContent e x) = ElementContent e (f x)
+  map f (Comment s x) = Comment s (f x)
 
 type Content = Free ContentF
 
@@ -67,6 +70,9 @@ text s = liftF $ TextContent s unit
 
 elem :: Element -> Content Unit
 elem e = liftF $ ElementContent e unit
+
+comment :: String -> Content Unit
+comment s = liftF $ Comment s unit
 
 class IsValue a where
   toValue :: a -> String
@@ -143,4 +149,9 @@ render = execWriter <<< renderElement
           pure rest
         renderContentItem (ElementContent e' rest) = do
           renderElement e'
+          pure rest
+        renderContentItem (Comment s rest) = do
+          tell "<!-- "
+          tell s
+          tell " --!>"
           pure rest
