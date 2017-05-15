@@ -98,12 +98,12 @@ infix 4 attribute as :=
 
 a' :: Array Attribute -> Content Unit -> Element
 a' attribs content = element "a" attribs (Just content)
-a ::  Array Attribute -> Content Unit
+a ::  Array Attribute -> Content Unit -> Content Unit
 a attribs content = elem $ a' attribs content
 
 p' :: Array Attribute -> Content Unit -> Element
 p' attribs content = element "p" attribs (Just content)
-p :: Array Attribute -> Content Unit
+p :: Array Attribute -> Content Unit -> Content Unit
 p attribs content = elem $ p' attribs content
 
 img' :: Array Attribute -> Element
@@ -139,6 +139,50 @@ height = AttributeKey "height"
 
 type Interp = WriterT String (State Int)
 
+--
+render :: Content Unit -> String
+render = \e -> evalState (execWriterT (renderElement e)) 0
+  where
+    renderElement :: Element -> Interp Unit
+    renderElement (Element e) = do
+        tell "<"
+        tell e.name
+        for_ e.attribs $ \x -> do
+          tell " "
+          renderAttribute x
+        renderContent e.content
+      where
+        renderAttribute :: Attribute -> Interp Unit
+        renderAttribute (Attribute x) = do
+          tell x.key
+          tell "=\""
+          tell x.value
+          tell "\""
+
+        renderContent :: Maybe (Content Unit) -> Interp Unit
+        renderContent Nothing = tell " />"
+        renderContent (Just content) = do
+          tell ">"
+          runFreeM renderContentItem content
+          tell "</"
+          tell e.name
+          tell ">"
+
+        renderContentItem :: forall a. ContentF (Content a) -> Interp (Content a)
+        renderContentItem (TextContent s rest) = do
+          tell s
+          pure rest
+        renderContentItem (ElementContent e' rest) = do
+          renderElement e'
+          pure rest
+        renderContentItem (NewName k) = do
+          n <- get
+          let fresh = Name $ "name" <> show n
+          put $ n + 1
+          pure (k fresh)
+--}
+
+{--
 render :: Element -> String
 render = \e -> evalState (execWriterT (renderElement e)) 0
   where
@@ -179,3 +223,4 @@ render = \e -> evalState (execWriterT (renderElement e)) 0
           let fresh = Name $ "name" <> show n
           put $ n + 1
           pure (k fresh)
+--}
