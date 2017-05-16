@@ -141,16 +141,28 @@ type Interp = WriterT String (State Int)
 
 --
 render :: Content Unit -> String
-render = \e -> evalState (execWriterT (renderElement e)) 0
+render = \e -> evalState (execWriterT (runFreeM renderContentItem e)) 0
   where
+    renderContentItem :: forall a. ContentF (Content a) -> Interp (Content a)
+    renderContentItem (TextContent s rest) = do
+      tell s
+      pure rest
+    renderContentItem (ElementContent e' rest) = do
+      renderElement e'
+      pure rest
+    renderContentItem (NewName k) = do
+      n <- get
+      let fresh = Name $ "name" <> show n
+      put $ n + 1
+      pure (k fresh)
     renderElement :: Element -> Interp Unit
     renderElement (Element e) = do
-        tell "<"
-        tell e.name
-        for_ e.attribs $ \x -> do
-          tell " "
-          renderAttribute x
-        renderContent e.content
+      tell "<"
+      tell e.name
+      for_ e.attribs $ \x -> do
+        tell " "
+        renderAttribute x
+      renderContent e.content
       where
         renderAttribute :: Attribute -> Interp Unit
         renderAttribute (Attribute x) = do
@@ -158,7 +170,6 @@ render = \e -> evalState (execWriterT (renderElement e)) 0
           tell "=\""
           tell x.value
           tell "\""
-
         renderContent :: Maybe (Content Unit) -> Interp Unit
         renderContent Nothing = tell " />"
         renderContent (Just content) = do
@@ -168,18 +179,6 @@ render = \e -> evalState (execWriterT (renderElement e)) 0
           tell e.name
           tell ">"
 
-        renderContentItem :: forall a. ContentF (Content a) -> Interp (Content a)
-        renderContentItem (TextContent s rest) = do
-          tell s
-          pure rest
-        renderContentItem (ElementContent e' rest) = do
-          renderElement e'
-          pure rest
-        renderContentItem (NewName k) = do
-          n <- get
-          let fresh = Name $ "name" <> show n
-          put $ n + 1
-          pure (k fresh)
 --}
 
 {--
