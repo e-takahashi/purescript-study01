@@ -26,6 +26,10 @@ module Data.DOM.Name
   , newName
 
   , render
+
+--
+  , hoge
+
   ) where
 
 import Prelude
@@ -56,6 +60,9 @@ instance functorContentF :: Functor ContentF where
   map f (NewName k) = NewName (f <<< k)
 
 type Content = Free ContentF
+--newtype Content a = Content (Free ContentF a)
+
+newtype ContentX a = ContentX (Free ContentF a)
 
 newtype Attribute = Attribute
   { key          :: String
@@ -69,12 +76,15 @@ element name_ attribs content = Element { name: name_, attribs, content }
 
 text :: String -> Content Unit
 text s = liftF $ TextContent s unit
+--text s = Content $ liftF $ TextContent s unit
 
 elem :: Element -> Content Unit
 elem e = liftF $ ElementContent e unit
+--elem e = Content $ liftF $ ElementContent e unit
 
 newName :: Content Name
 newName = liftF $ NewName id
+--newName = Content $ liftF $ NewName id
 
 class IsValue a where
   toValue :: a -> String
@@ -138,6 +148,18 @@ height :: AttributeKey Int
 height = AttributeKey "height"
 
 type Interp = WriterT String (State Int)
+
+hoge :: forall a. ContentF (Content a) -> Interp (Content a)
+hoge (TextContent s rest) = do
+  tell s
+  pure rest
+hoge (ElementContent e' rest) = do
+  pure rest
+hoge (NewName k) = do
+  n <- get
+  let fresh = Name $ "name" <> show n
+  put $ n + 1
+  pure (k fresh)
 
 --
 render :: Content Unit -> String
