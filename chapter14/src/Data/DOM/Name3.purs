@@ -1,4 +1,6 @@
 module Data.DOM.Name3
+{--
+}
   ( Element
   , Attribute
   , Name
@@ -26,7 +28,9 @@ module Data.DOM.Name3
   , newName
 
   , render
-  ) where
+  )
+--}
+ where
 
 import Prelude
 
@@ -73,8 +77,8 @@ text s = Content $ liftF $ TextContent s unit
 elem :: Element -> Content Unit
 elem e = Content $ liftF $ ElementContent e unit
 
-newName :: Content Name
-newName = Content $ liftF $ NewName id
+newName :: Free ContentF Name
+newName = liftF $ NewName id
 
 class IsValue a where
   toValue :: a -> String
