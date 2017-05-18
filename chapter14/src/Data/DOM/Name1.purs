@@ -1,4 +1,4 @@
-module Data.DOM.Name
+module Data.DOM.Name1
   ( Element
   , Attribute
   , Name
@@ -22,7 +22,6 @@ module Data.DOM.Name
 
   , attribute, (:=)
   , text
-  , elem
   , newName
 
   , render
@@ -96,14 +95,14 @@ attribute (AttributeKey key) value = Attribute
 
 infix 4 attribute as :=
 
-a :: Array Attribute -> Content Unit -> Element
-a attribs content = element "a" attribs (Just content)
+a :: Array Attribute -> Content Unit -> Content Unit
+a attribs content = elem $ element "a" attribs (Just content)
 
-p :: Array Attribute -> Content Unit -> Element
-p attribs content = element "p" attribs (Just content)
+p :: Array Attribute -> Content Unit -> Content Unit
+p attribs content = elem $ element "p" attribs (Just content)
 
-img :: Array Attribute -> Element
-img attribs = element "img" attribs Nothing
+img :: Array Attribute -> Content Unit
+img attribs = elem $ element "img" attribs Nothing
 
 data Href
   = URLHref String
@@ -133,9 +132,13 @@ height = AttributeKey "height"
 
 type Interp = WriterT String (State Int)
 
-render :: Element -> String
-render = \e -> evalState (execWriterT (renderElement e)) 0
+render :: Content Unit -> String
+render = \c -> evalState (execWriterT (renderContentTop c)) 0
   where
+    renderContentTop :: forall a. Content Unit -> Interp Unit
+    renderContentTop c' = do
+      runFreeM renderContentItem c'
+
     renderElement :: Element -> Interp Unit
     renderElement (Element e) = do
         tell "<"
@@ -151,7 +154,6 @@ render = \e -> evalState (execWriterT (renderElement e)) 0
           tell "=\""
           tell x.value
           tell "\""
-
         renderContent :: Maybe (Content Unit) -> Interp Unit
         renderContent Nothing = tell " />"
         renderContent (Just content) = do
@@ -161,15 +163,15 @@ render = \e -> evalState (execWriterT (renderElement e)) 0
           tell e.name
           tell ">"
 
-        renderContentItem :: forall a. ContentF (Content a) -> Interp (Content a)
-        renderContentItem (TextContent s rest) = do
-          tell s
-          pure rest
-        renderContentItem (ElementContent e' rest) = do
-          renderElement e'
-          pure rest
-        renderContentItem (NewName k) = do
-          n <- get
-          let fresh = Name $ "name" <> show n
-          put $ n + 1
-          pure (k fresh)
+    renderContentItem :: forall a. ContentF (Content a) -> Interp (Content a)
+    renderContentItem (TextContent s rest) = do
+      tell s
+      pure rest
+    renderContentItem (ElementContent e' rest) = do
+      renderElement e'
+      pure rest
+    renderContentItem (NewName k) = do
+      n <- get
+      let fresh = Name $ "name" <> show n
+      put $ n + 1
+      pure (k fresh)
