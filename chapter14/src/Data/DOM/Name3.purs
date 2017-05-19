@@ -1,11 +1,10 @@
 module Data.DOM.Name3
-{--
-}
+{--}
   ( Element
   , Attribute
   , Name
   , Content
---  , ContentF
+  , ContentF
   , AttributeKey
   , class IsValue
   , toValue
@@ -34,7 +33,7 @@ module Data.DOM.Name3
 
 import Prelude
 
-import Control.Monad.Free (Free, runFreeM, liftF)
+import Control.Monad.Free (Free, runFreeM, liftF, runFree)
 import Control.Monad.State (State, evalState)
 import Control.Monad.State.Trans (put, get)
 import Control.Monad.Writer.Trans (WriterT, execWriterT, tell)
@@ -61,6 +60,31 @@ instance functorContentF :: Functor ContentF where
 
 newtype Content a = Content (Free ContentF a)
 
+--derive instance functorContent :: Functor Content
+
+{--}
+instance functorContent :: Functor Content where
+  map f (Content c) = Content f (runFree k c) where
+    k :: forall a. ContentF (Free ContentF a) -> (Free ContentF a)
+    k (TextContent s a) = liftF $ TextContent s a
+    k (ElementContent e a) = liftF $ ElementContent e a
+    k (NewName l) = liftF $ NewName l
+--}
+
+instance applyContent :: Apply Content where
+  apply (Content f) (Content c) = Content (f c)
+
+instance applicativeContent :: Applicative Content where
+  pure a = Content a
+
+instance bindContent :: Bind Content where
+  bind (Content c) f = Content (map f (runFree k c)) where
+    k :: forall f a. Functor f => ContentF (Free ContentF a) -> Free f a
+    k = liftF
+
+instance monadContent :: Monad Content
+--}
+
 newtype Attribute = Attribute
   { key          :: String
   , value        :: String
@@ -77,8 +101,8 @@ text s = Content $ liftF $ TextContent s unit
 elem :: Element -> Content Unit
 elem e = Content $ liftF $ ElementContent e unit
 
-newName :: Free ContentF Name
-newName = liftF $ NewName id
+newName :: Content Name
+newName = Content $ liftF $ NewName id
 
 class IsValue a where
   toValue :: a -> String
@@ -100,11 +124,11 @@ attribute (AttributeKey key) value = Attribute
 
 infix 4 attribute as :=
 
-a :: Array Attribute -> Content Unit -> Element
-a attribs content = element "a" attribs (Just content)
+a :: Array Attribute -> Free ContentF Unit -> Element
+a attribs content = element "a" attribs (Just (Content content))
 
-p :: Array Attribute -> Content Unit -> Element
-p attribs content = element "p" attribs (Just content)
+p :: Array Attribute -> Free ContentF Unit -> Element
+p attribs content = element "p" attribs (Just (Content content))
 
 img :: Array Attribute -> Element
 img attribs = element "img" attribs Nothing
