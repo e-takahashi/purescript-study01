@@ -1,5 +1,6 @@
 module Data.DOM.Name3
-{--}
+{--
+}
   ( Element
   , Attribute
   , Name
@@ -33,7 +34,7 @@ module Data.DOM.Name3
 
 import Prelude
 
-import Control.Monad.Free (Free, runFreeM, liftF, runFree)
+import Control.Monad.Free (Free, runFreeM, liftF)
 import Control.Monad.State (State, evalState)
 import Control.Monad.State.Trans (put, get)
 import Control.Monad.Writer.Trans (WriterT, execWriterT, tell)
@@ -58,30 +59,28 @@ instance functorContentF :: Functor ContentF where
   map f (ElementContent e x) = ElementContent e (f x)
   map f (NewName k) = NewName (f <<< k)
 
+--newtype Content a = Content (a -> Free ContentF a)
 newtype Content a = Content (Free ContentF a)
 
---derive instance functorContent :: Functor Content
+--
+instance showName :: Show Name where
+  show (Name n) = n
+--  
 
 {--}
-instance functorContent :: Functor Content where
-  map f (Content c) = Content f (runFree k c) where
-    k :: forall a. ContentF (Free ContentF a) -> (Free ContentF a)
-    k (TextContent s a) = liftF $ TextContent s a
-    k (ElementContent e a) = liftF $ ElementContent e a
-    k (NewName l) = liftF $ NewName l
---}
+instance contentFunctor :: Functor Content where
+  map f (Content c) = Content (map f c)
 
-instance applyContent :: Apply Content where
-  apply (Content f) (Content c) = Content (f c)
+instance contentApply :: Apply Content where
+  apply (Content f) (Content c) = Content (apply f c)
 
-instance applicativeContent :: Applicative Content where
-  pure a = Content a
+instance contentApplicative :: Applicative Content where
+  pure a = Content (pure a)
 
-instance bindContent :: Bind Content where
-  bind (Content c) f = Content (map f (runFree k c)) where
-    k :: forall f a. Functor f => ContentF (Free ContentF a) -> Free f a
-    k = liftF
-
+instance contentBind :: Bind Content where
+  bind (Content fr) fn =
+    Content (fr >>= (\a -> case fn a of Content fr' -> fr'))
+    
 instance monadContent :: Monad Content
 --}
 
@@ -124,11 +123,13 @@ attribute (AttributeKey key) value = Attribute
 
 infix 4 attribute as :=
 
-a :: Array Attribute -> Free ContentF Unit -> Element
-a attribs content = element "a" attribs (Just (Content content))
+--a :: Array Attribute -> Free ContentF Unit -> Element
+a :: Array Attribute -> Content Unit -> Element
+a attribs content = element "a" attribs (Just content)
 
-p :: Array Attribute -> Free ContentF Unit -> Element
-p attribs content = element "p" attribs (Just (Content content))
+--p :: Array Attribute -> Free ContentF Unit -> Element
+p :: Array Attribute -> Content Unit -> Element
+p attribs content = element "p" attribs (Just content)
 
 img :: Array Attribute -> Element
 img attribs = element "img" attribs Nothing
