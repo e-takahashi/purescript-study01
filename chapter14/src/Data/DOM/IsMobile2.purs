@@ -94,10 +94,8 @@ elem e = Content $ liftF $ ElementContent e unit
 newName :: Content Name
 newName = Content $ liftF $ NewName id
 
-{--}
 isMobile :: Content Boolean
 isMobile = Content $ liftF $ IsMobile id
---}
 
 class IsValue a where
   toValue :: a -> String
@@ -154,19 +152,11 @@ width = AttributeKey "width"
 height :: AttributeKey Int
 height = AttributeKey "height"
 
---type Interp = WriterT String (State Int)
---type Interp = ReaderT Boolean (WriterT String (State Int))
 type Interp = RWS Boolean String Int
 
 render :: Content Unit -> String
---render = \c -> evalState (execWriterT (renderContentTop c)) 0
---render = \c -> evalState (execWriterT (runReaderT (renderContentTop c) false)) 0
-render = \c -> snd (evalRWS (renderContentTop c) false 0)
+render = \(Content c) -> snd (evalRWS (runFreeM renderContentItem c) false 0)
   where
-    renderContentTop :: Content Unit -> Interp Unit
-    renderContentTop (Content c') = do
-      runFreeM renderContentItem c'
-    renderElement :: Element -> Interp Unit
     renderElement (Element e) = do
         tell "<"
         tell e.name
