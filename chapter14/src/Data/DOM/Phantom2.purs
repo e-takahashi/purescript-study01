@@ -23,16 +23,19 @@ module Data.DOM.Phantom2
 
   , render
 
---
   , True
   , False
   , disabled
+
+{--
+}
   , Foo(..)
   , class KnownFlag
   , flagVal
   , testFoo
   , On
   , Off
+--}
   ) where
 
 import Prelude
@@ -115,6 +118,10 @@ height = AttributeKey "height"
 --
 data True
 data False  
+instance trueIsValue :: IsValue True where
+  toValue _ = "true"
+instance falseIsValue :: IsValue False where
+  toValue _ = "false"
 
 disabled :: AttributeKey True
 disabled = AttributeKey "disabled"
@@ -138,8 +145,10 @@ render (Element e) =
       where
         renderContentItem :: Content -> String
         renderContentItem (TextContent s) = s
+
         renderContentItem (ElementContent e') = render e'
 
+{--
 data Foo a = Foo { getFoo :: Int }
 data On
 data Off
@@ -154,7 +163,6 @@ testFoo foo =
   (if flagVal foo then "On:" else "Off:") -- <> show (foo.getFoo)
 
 
-{--
 http://philopon.github.io/kansaifp-3-3/#/6/1
 
 Phantom type
