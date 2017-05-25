@@ -148,11 +148,8 @@ height = AttributeKey "height"
 type Interp = WriterT String (State Int)
 
 render :: Content Unit -> String
-render = \c -> evalState (execWriterT (renderContentTop c)) 0
+render = \(Content c) -> evalState (execWriterT (runFreeM renderContentItem c)) 0
   where
-    renderContentTop :: Content Unit -> Interp Unit
-    renderContentTop (Content c') = do
-      runFreeM renderContentItem c'
     renderElement :: Element -> Interp Unit
     renderElement (Element e) = do
         tell "<"

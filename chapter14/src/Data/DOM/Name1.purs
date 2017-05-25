@@ -132,13 +132,13 @@ height = AttributeKey "height"
 
 type Interp = WriterT String (State Int)
 
-render :: Content Unit -> String
-render = \c -> evalState (execWriterT (renderContentTop c)) 0
-  where
-    renderContentTop :: forall a. Content Unit -> Interp Unit
-    renderContentTop c' = do
-      runFreeM renderContentItem c'
+{-
+Must the top level tag be a single element tag?
+-}
 
+render :: Content Unit -> String
+render = \c -> evalState (execWriterT (runFreeM renderContentItem c)) 0
+  where
     renderElement :: Element -> Interp Unit
     renderElement (Element e) = do
         tell "<"

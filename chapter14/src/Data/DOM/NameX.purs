@@ -1,8 +1,9 @@
-module Data.DOM.IsMobile
+module Data.DOM.NameX
   ( Element
   , Attribute
   , Name
   , Content
+  , ContentF
   , AttributeKey
   , class IsValue
   , toValue
@@ -21,8 +22,8 @@ module Data.DOM.IsMobile
 
   , attribute, (:=)
   , text
+  , elem
   , newName
-  , isMobile
 
   , render
   ) where
@@ -35,7 +36,6 @@ import Control.Monad.State.Trans (put, get)
 import Control.Monad.Writer.Trans (WriterT, execWriterT, tell)
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
-import Control.Monad.Reader.Trans
 
 newtype Element = Element
   { name         :: String
@@ -49,30 +49,13 @@ data ContentF a
   = TextContent String a
   | ElementContent Element a
   | NewName (Name -> a)
-  | IsMobile (Boolean -> a)
 
 instance functorContentF :: Functor ContentF where
   map f (TextContent s x) = TextContent s (f x)
   map f (ElementContent e x) = ElementContent e (f x)
   map f (NewName k) = NewName (f <<< k)
-  map f (IsMobile k) = IsMobile (f <<< k)
 
-newtype Content a = Content (Free ContentF a)
-
-instance contentFunctor :: Functor Content where
-  map f (Content c) = Content (map f c)
-
-instance contentApply :: Apply Content where
-  apply (Content f) (Content c) = Content (apply f c)
-
-instance contentApplicative :: Applicative Content where
-  pure a = Content (pure a)
-
-instance contentBind :: Bind Content where
-  bind (Content fr) fn =
-    Content (fr >>= (\a -> case fn a of Content fr' -> fr'))
-    
-instance monadContent :: Monad Content
+type Content = Free ContentF
 
 newtype Attribute = Attribute
   { key          :: String
@@ -85,16 +68,13 @@ element :: String -> Array Attribute -> Maybe (Content Unit) -> Element
 element name_ attribs content = Element { name: name_, attribs, content }
 
 text :: String -> Content Unit
-text s = Content $ liftF $ TextContent s unit
+text s = liftF $ TextContent s unit
 
 elem :: Element -> Content Unit
-elem e = Content $ liftF $ ElementContent e unit
+elem e = liftF $ ElementContent e unit
 
 newName :: Content Name
-newName = Content $ liftF $ NewName id
-
-isMobile :: Content Boolean
-isMobile = Content $ liftF $ IsMobile id
+newName = liftF $ NewName id
 
 class IsValue a where
   toValue :: a -> String
@@ -116,14 +96,14 @@ attribute (AttributeKey key) value = Attribute
 
 infix 4 attribute as :=
 
-a ::  Array Attribute -> Content Unit -> Content Unit
-a attribs content = elem $ element "a" attribs (Just content)
+a :: Array Attribute -> Content Unit -> Element
+a attribs content = element "a" attribs (Just content)
 
-p :: Array Attribute -> Content Unit -> Content Unit
-p attribs content = elem $ element "p" attribs (Just content)
+p :: Array Attribute -> Content Unit -> Element
+p attribs content = element "p" attribs (Just content)
 
-img :: Array Attribute -> Content Unit
-img attribs = elem $ element "img" attribs Nothing
+img :: Array Attribute -> Element
+img attribs = element "img" attribs Nothing
 
 data Href
   = URLHref String
@@ -151,13 +131,14 @@ width = AttributeKey "width"
 height :: AttributeKey Int
 height = AttributeKey "height"
 
-type Interp = ReaderT Boolean (WriterT String (State Int))
+type Interp = WriterT String (State Int)
 
-render :: Content Unit -> String
-render = \(Content c) -> evalState (execWriterT (runReaderT (runFreeM renderContentItem c) false)) 0
+render :: Element -> String
+render = \e -> evalState (execWriterT (renderElement e)) 0
   where
     renderElement :: Element -> Interp Unit
     renderElement (Element e) = do
+        tell "** renderElement **"
         tell "<"
         tell e.name
         for_ e.attribs $ \x -> do
@@ -171,28 +152,35 @@ render = \(Content c) -> evalState (execWriterT (runReaderT (runFreeM renderCont
           tell "=\""
           tell x.value
           tell "\""
+
         renderContent :: Maybe (Content Unit) -> Interp Unit
         renderContent Nothing = tell " />"
-        renderContent (Just (Content content)) = do
+        renderContent (Just content) = do
+          tell "** renderContent **"
           tell ">"
           runFreeM renderContentItem content
           tell "</"
           tell e.name
           tell ">"
 
-    renderContentItem :: forall a. ContentF (Free ContentF a) -> Interp (Free ContentF a)
-    renderContentItem (TextContent s rest) = do
-      tell s
-      pure rest
-    renderContentItem (ElementContent e' rest) = do
-      renderElement e'
-      pure rest
-    renderContentItem (NewName k) = do
-      n <- get
-      let fresh = Name $ "name" <> show n
-      put $ n + 1
-      pure (k fresh)
-    renderContentItem (IsMobile k) = do
-      mbl <- ask
-      pure (k mbl)
-      
+        renderContentItem :: forall a. ContentF (Content a) -> Interp (Content a)
+        renderContentItem (TextContent s rest) = do
+          tell "** TextContent **"
+          tell s
+          case rest of
+            unit -> tell "text: unit"
+            _ -> tell "text: not unit"
+          pure rest
+        renderContentItem (ElementContent e' rest) = do
+          tell "** ElementContent **"
+          renderElement e'
+          case rest of
+            unit -> tell "element: unit"
+            _ -> tell "element: not unit"
+          pure rest
+        renderContentItem (NewName k) = do
+          tell "** NewName **"
+          n <- get
+          let fresh = Name $ "name" <> show n
+          put $ n + 1
+          pure (k fresh)
